@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analyze Data - Time Series Analyzer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">Time Series Analyzer</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#">Analyze</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="alert alert-info">
+                    <h4>Analyzing: {{ filename }}</h4>
+                    <p>Select the type of analysis you want to perform on your data.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-3">
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        Analysis Options
+                    </div>
+                    <div class="card-body">
+                        <ul class="nav nav-pills flex-column" id="analysis-tabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="basic-tab" data-bs-toggle="pill" data-bs-target="#basic" type="button" role="tab">Basic Analysis</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="anomaly-tab" data-bs-toggle="pill" data-bs-target="#anomaly" type="button" role="tab">Anomaly Detection</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="forecast-tab" data-bs-toggle="pill" data-bs-target="#forecast" type="button" role="tab">Forecasting</button>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        Data Columns
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group">
+                            {% for column in columns %}
+                            <button type="button" class="list-group-item list-group-item-action column-item" data-column="{{ column }}">
+                                {{ column }}
+                            </button>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-9">
+                <div class="tab-content" id="analysis-tab-content">
+                    <!-- Basic Analysis Tab -->
+                    <div class="tab-pane fade show active" id="basic" role="tabpanel">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                Basic Analysis
+                            </div>
+                            <div class="card-body">
+                                <p>Perform basic statistical analysis on your time series data.</p>
+                                <form id="basic-analysis-form">
+                                    <input type="hidden" name="analysis_type" value="basic">
+                                    <input type="hidden" name="file_id" value="{{ file_id }}">
+                                    <button type="submit" class="btn btn-primary">Run Analysis</button>
+                                </form>
+                                <div id="basic-results" class="mt-4"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Anomaly Detection Tab -->
+                    <div class="tab-pane fade" id="anomaly" role="tabpanel">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                Anomaly Detection
+                            </div>
+                            <div class="card-body">
+                                <p>Detect anomalies in your time series data using various methods.</p>
+                                <form id="anomaly-detection-form">
+                                    <input type="hidden" name="analysis_type" value="anomaly">
+                                    <input type="hidden" name="file_id" value="{{ file_id }}">
+                                    
+                                    <div class="mb-3">
+                                        <label for="anomaly-method" class="form-label">Detection Method</label>
+                                        <select class="form-select" id="anomaly-method" name="method">
+                                            <option value="zscore">Z-Score</option>
+                                            <option value="iqr">IQR (Interquartile Range)</option>
+                                            <option value="isolation_forest">Isolation Forest</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="anomaly-threshold" class="form-label">Threshold</label>
+                                        <input type="number" class="form-control" id="anomaly-threshold" name="threshold" value="3" min="1" max="10" step="0.1">
+                                        <div class="form-text">Higher values detect fewer anomalies.</div>
+                                    </div>
+                                    
+                                    <button type="submit" class="btn btn-primary">Detect Anomalies</button>
+                                </form>
+                                <div id="anomaly-results" class="mt-4"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Forecasting Tab -->
+                    <div class="tab-pane fade" id="forecast" role="tabpanel">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                Time Series Forecasting
+                            </div>
+                            <div class="card-body">
+                                <p>Forecast future values of your time series data using various models.</p>
+                                <form id="forecasting-form">
+                                    <input type="hidden" name="analysis_type" value="forecast">
+                                    <input type="hidden" name="file_id" value="{{ file_id }}">
+                                    
+                                    <div class="mb-3">
+                                        <label for="forecast-model" class="form-label">Forecasting Model</label>
+                                        <select class="form-select" id="forecast-model" name="model">
+                                            {% for model in models %}
+                                            <option value="{{ model.id }}">{{ model.name }} - {{ model.description }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="forecast-periods" class="form-label">Periods to Forecast</label>
+                                        <input type="number" class="form-control" id="forecast-periods" name="periods" value="10" min="1" max="100">
+                                    </div>
+                                    
+                                    <button type="submit" class="btn btn-primary">Generate Forecast</button>
+                                </form>
+                                <div id="forecast-results" class="mt-4"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-light py-4 mt-5">
+        <div class="container text-center">
+            <p>&copy; 2025 Time Series Analyzer. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        // Store the file ID for use in API calls
+        const fileId = "{{ file_id }}";
+    </script>
+</body>
+</html>
