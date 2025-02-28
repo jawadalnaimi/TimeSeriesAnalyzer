@@ -14,8 +14,8 @@ def create_app(test_config=None):
         SECRET_KEY=os.environ.get('SECRET_KEY', 'dev'),
         UPLOAD_FOLDER=os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data/uploads'),
         PROCESSED_FOLDER=os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data/processed'),
-        MAX_CONTENT_LENGTH=16 * 1024 * 1024,  # 16MB max upload size
-        ALLOWED_EXTENSIONS={'csv', 'xls', 'xlsx', 'json', 'txt'}
+        MAX_CONTENT_LENGTH=100 * 1024 * 1024,  # 100MB max upload size
+        ALLOWED_EXTENSIONS={'csv', 'xls', 'xlsx', 'json'}
     )
 
     if test_config is None:

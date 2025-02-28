@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Test - Time Series Analyzer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        pre {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .json-key {
+            color: #7952b3;
+        }
+        .json-string {
+            color: #28a745;
+        }
+        .json-number {
+            color: #fd7e14;
+        }
+        .json-boolean {
+            color: #dc3545;
+        }
+        .json-null {
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>Debug Test Page</h1>
+        <p class="lead">This page is for testing JSON serialization issues.</p>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Test JSON Serialization</h5>
+            </div>
+            <div class="card-body">
+                <button id="test-button" class="btn btn-primary mb-3">Run Serialization Test</button>
+                <div id="test-result" class="mt-3"></div>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Manual Data Input</h5>
+            </div>
+            <div class="card-body">
+                <form id="manual-test-form">
+                    <div class="mb-3">
+                        <label for="test-data" class="form-label">Enter JSON Data to Test</label>
+                        <textarea id="test-data" class="form-control" rows="5" placeholder='{"example": "data"}'></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Test Data</button>
+                </form>
+                <div id="manual-test-result" class="mt-3"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Test button
+            const testButton = document.getElementById('test-button');
+            const testResult = document.getElementById('test-result');
+            
+            testButton.addEventListener('click', function() {
+                testResult.innerHTML = '<div class="alert alert-info">Running test...</div>';
+                
+                fetch('/api/debug-test')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! Status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Test successful:', data);
+                        displayJsonResult(data, testResult);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        testResult.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+                        
+                        // Try to get the raw response text
+                        if (error.response) {
+                            error.response.text().then(text => {
+                                testResult.innerHTML += `<div class="mt-3"><strong>Raw Response:</strong><pre>${text}</pre></div>`;
+                            });
+                        }
+                    });
+            });
+            
+            // Manual test form
+            const manualTestForm = document.getElementById('manual-test-form');
+            const manualTestResult = document.getElementById('manual-test-result');
+            
+            manualTestForm.addEventListener('submit', function(event) {
+                event.preventDefault();
+                
+                const testData = document.getElementById('test-data').value;
+                
+                try {
+                    // Parse the JSON to validate it
+                    const jsonData = JSON.parse(testData);
+                    
+                    manualTestResult.innerHTML = '<div class="alert alert-info">Testing data...</div>';
+                    
+                    fetch('/api/debug-test', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: testData
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! Status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Test successful:', data);
+                        displayJsonResult(data, manualTestResult);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        manualTestResult.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+                        
+                        // Try to get the raw response text
+                        if (error.response) {
+                            error.response.text().then(text => {
+                                manualTestResult.innerHTML += `<div class="mt-3"><strong>Raw Response:</strong><pre>${text}</pre></div>`;
+                            });
+                        }
+                    });
+                } catch (error) {
+                    manualTestResult.innerHTML = `<div class="alert alert-danger">Invalid JSON: ${error.message}</div>`;
+                }
+            });
+            
+            // Function to display JSON result with syntax highlighting
+            function displayJsonResult(data, container) {
+                const jsonString = JSON.stringify(data, null, 2);
+                const highlightedJson = syntaxHighlight(jsonString);
+                
+                container.innerHTML = `
+                    <div class="alert alert-success">Test completed successfully!</div>
+                    <div class="mt-3">
+                        <h6>Result:</h6>
+                        <pre>${highlightedJson}</pre>
+                    </div>
+                `;
+            }
+            
+            // Function to highlight JSON syntax
+            function syntaxHighlight(json) {
+                json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+                    let cls = 'json-number';
+                    if (/^"/.test(match)) {
+                        if (/:$/.test(match)) {
+                            cls = 'json-key';
+                        } else {
+                            cls = 'json-string';
+                        }
+                    } else if (/true|false/.test(match)) {
+                        cls = 'json-boolean';
+                    } else if (/null/.test(match)) {
+                        cls = 'json-null';
+                    }
+                    return '<span class="' + cls + '">' + match + '</span>';
+                });
+            }
+        });
+    </script>
+</body>
+</html>

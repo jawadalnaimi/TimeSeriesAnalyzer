@@ -6,7 +6,6 @@
     <title>Time Series Analyzer</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
@@ -83,6 +82,41 @@
                 </div>
             </div>
         </div>
+        
+        <div class="row mt-5">
+            <div class="col-md-8 offset-md-2">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Time Series Forecasting</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info mb-3">
+                            <p><strong>Note:</strong> You must upload a file first before generating a forecast.</p>
+                        </div>
+                        <form id="forecast-form">
+                            <input type="hidden" id="forecast-file-id" value="">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="forecast-model" class="form-label">Forecasting Model</label>
+                                    <select class="form-select" id="forecast-model">
+                                        <option value="arima">ARIMA</option>
+                                        <option value="sarima">SARIMA</option>
+                                        <option value="exponential_smoothing">Exponential Smoothing</option>
+                                        <option value="test">Test Model (Debug)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="forecast-periods" class="form-label">Forecast Periods</label>
+                                    <input type="number" class="form-control" id="forecast-periods" value="10" min="1" max="100">
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-primary" id="forecast-button">Generate Forecast</button>
+                        </form>
+                        <div id="forecast-result" class="mt-4"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <footer class="bg-light py-4 mt-5">
@@ -91,7 +125,8 @@
         </div>
     </footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>
