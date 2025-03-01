@@ -32,7 +32,7 @@ A web-based tool for analyzing and visualizing time series data.
    ```
    python run.py
    ```
-3. Open your browser and navigate to `http://localhost:5000`
+3. Open your browser and navigate to `http://localhost:5001`
 
 ## Project Structure
 
