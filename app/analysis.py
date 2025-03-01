@@ -296,12 +296,52 @@ def arima_forecast(series, periods=10):
         # Convert series to float to ensure compatibility
         series = series.astype(float)
         
+        # Check if the series is constant (all values are the same)
+        if series.std() == 0:
+            logger.warning("Series is constant, cannot apply ARIMA. Using simple constant forecast.")
+            # Generate a constant forecast
+            forecast_values = np.full(periods, series.iloc[0])
+            
+            # Create dummy dates for the forecast
+            if isinstance(series.index[0], pd.Timestamp):
+                # If the index is a datetime, generate future dates
+                freq = pd.infer_freq(series.index)
+                if freq is None:
+                    # If frequency cannot be inferred, use day as default
+                    freq = 'D'
+                future_dates = pd.date_range(start=series.index[-1], periods=periods+1, freq=freq)[1:]
+            else:
+                # If the index is not a datetime, just use integers
+                future_dates = range(len(series), len(series) + periods)
+            
+            # Return a simple constant forecast
+            return {
+                'historical_dates': series.index.tolist(),
+                'historical_values': series.values.tolist(),
+                'dates': list(future_dates) if isinstance(future_dates, range) else future_dates.tolist(),
+                'forecast': forecast_values.tolist(),
+                'lower_bounds': forecast_values.tolist(),
+                'upper_bounds': forecast_values.tolist(),
+                'model_info': {
+                    'name': 'Constant',
+                    'order': (0, 0, 0),
+                    'aic': 0,
+                    'is_stationary': True,
+                    'p_value': 1.0,
+                    'metrics': {},
+                    'description': "Constant forecast (input data has no variation)"
+                }
+            }
+        
         # Check for stationarity using Augmented Dickey-Fuller test
         adf_result = adfuller(series.dropna())
         is_stationary = adf_result[1] < 0.05  # p-value < 0.05 indicates stationarity
         
         # Determine differencing parameter (d)
         d = 0 if is_stationary else 1
+        
+        # Initialize test as an empty Series to avoid the variable reference error
+        test = pd.Series()
         
         # For large datasets, use a simpler approach
         if len(series) > 10000:
@@ -375,13 +415,18 @@ def arima_forecast(series, periods=10):
             mse = mean_squared_error(test, in_sample_pred)
             rmse = np.sqrt(mse)
             mae = mean_absolute_error(test, in_sample_pred)
-            mape = np.mean(np.abs((test - in_sample_pred) / test)) * 100
+            
+            # Calculate MAPE safely to avoid division by zero
+            if (test == 0).any():
+                mape = None  # Skip MAPE if there are zeros in the test data
+            else:
+                mape = np.mean(np.abs((test - in_sample_pred) / test)) * 100
             
             metrics = {
                 'mse': float(mse),
                 'rmse': float(rmse),
                 'mae': float(mae),
-                'mape': float(mape) if not np.isinf(mape) else None
+                'mape': float(mape) if mape is not None and not np.isinf(mape) else None
             }
         
         # Get dates for the forecast
